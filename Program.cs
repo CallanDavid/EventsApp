@@ -3,92 +3,79 @@ using System.Threading;
 
 namespace EventsApp
 {
-    // Define the delegate that will be used for the event
-    public delegate void StockPriceChangedHandler(string message);
+    // Using the Generic Delegate EventHandler<TEventArgs>
 
-    // Define the Stock class which includes the event system
-    public class Stock
+    public delegate void TemperatureChangeHandler(string message);
+
+    public class TemperatureChangedEventArgs: EventArgs
     {
-        // Declare the event using the delegate
-        // Private field to store the stock price
-        // Private field to store the threshold
-        //TODO
-        public event StockPriceChangedHandler OnStockPriceChanged;
-
-        private decimal _price;
-        private decimal _threshold;
-
-        // Property to get and set the stock price
-        public decimal Price 
+        // Property holding the temperature value
+        public int Temperature { get; }
+        // Constructor
+        public TemperatureChangedEventArgs(int temperature)
         {
-            // Set the new price
-            // Raise the event if the price drops below the threshold
-            //TODO
-                get { return _price; }
+            Temperature = temperature;
+        }
+    }
+
+    public class TemperatureMonitor
+    {
+        public event EventHandler<TemperatureChangedEventArgs> TemperatureChanged;
+
+        public event TemperatureChangeHandler OnTemperatureChange;
+
+        private int _temperature;
+        public int Temperature
+        {
+            get { return _temperature; }
             set
             {
-                _price = value;
-                if (_price < _threshold)
+                if (_temperature != value)
                 {
-                    RaiseStockPriceChangedEvent($"Stock price increased to {value}");
+                    _temperature = value;
+                    // RAISE EVENT
+                    OnTemperatureChanged(new TemperatureChangedEventArgs(_temperature));
                 }
             }
         }
-       
-        // Property to get and set the alert threshold
-        public decimal Threshold
+        protected virtual void OnTemperatureChanged(TemperatureChangedEventArgs e)
         {
-            //TODO
-            get { return _threshold; }
-            set 
-            {
-                _threshold = value;
-            }
-        }
-
-        // Method to raise the stock price changed event
-        protected virtual void RaiseStockPriceChangedEvent(string message)
-        {
-            // Invoke the event
-            //TODO
-            OnStockPriceChanged?.Invoke(message);
+            // letting every subscriber know
+            TemperatureChanged?.Invoke(this, e);       // '?' means it could potentially be 0
         }
     }
 
+    //Subscriber
 
-    // Define the subscriber class which reacts to the event
-    public class StockAlert
+    public class TemperatureAlert
     {
-        // Method that handles the event and prints a message to the console
-        //TODO
-        public void OnStockPriceChanged(string message)
+        public void OnTemperatureChange(object sender, TemperatureChangedEventArgs e)
         {
-            Console.WriteLine("Stock Alert: Stock price is below threshold!");
+            Console.WriteLine($"Alert: temperature is {e.Temperature} \tSender is {sender}");
+        }
+    }
+    //   Subscriber #2
+    public class TempCoolingAlert
+    {
+        public void OnTemperatureChange(object sender, TemperatureChangedEventArgs e)
+        {
+            Console.WriteLine($"TEMP COOLING ALERT: temperature is {e.Temperature} \tSender is {sender}");
         }
     }
 
-    // Program class to simulate the stock price changes and test the event system
-    class Program
+    internal class Program
     {
         static void Main(string[] args)
         {
-            // Create instances of Stock and StockAlert
-            //TODO
-            Stock stock = new Stock();
-            StockAlert stockAlert = new StockAlert();
+            TemperatureMonitor monitor = new TemperatureMonitor();
+            TemperatureAlert alert = new TemperatureAlert();
+            TempCoolingAlert alert2 = new TempCoolingAlert();
+            monitor.TemperatureChanged += alert.OnTemperatureChange;
+            monitor.TemperatureChanged += alert2.OnTemperatureChange;
 
-            // Subscribe to the stock price changed event
-            //TODO
-            stock.OnStockPriceChanged += stockAlert.OnStockPriceChanged;
-
-            // Set the alert threshold
-            //TODO
-            stock.Threshold = 120;
-            // Simulate stock price changes
-            //TODO
-            stock.Price = int.Parse(Console.ReadLine());
-            // Wait for user input to close the console
-            //TODO
+            monitor.Temperature = 20;
+            Console.WriteLine("Please enter the temperature...");
+            monitor.Temperature = int.Parse(Console.ReadLine());
             Console.ReadLine();
         }
     }
