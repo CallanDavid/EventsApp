@@ -1,27 +1,34 @@
 ﻿namespace EventsApp
 {
-    public delegate void Notify(string message);
+    public delegate void TemperatureChangeHandler(string message);
 
-    public class EventPublisher
+    public class TemperatureMonitor
     {
-        /*
-            The 'On' prefix makes it immediately clear that the method is associated to an event.
-            It signifies that the method is not just a regular method but one that is called when a specific event occurs.
-         */
-        public event Notify OnNotify;
+        public event TemperatureChangeHandler OnTemperatureChange;
 
-        public void RaiseEvent(string message)
+        private int _temperature;
+        public int Temperature { get { return _temperature; }
+            set
+            {
+                _temperature = value;   
+                if(_temperature > 30)
+                {
+                    // RAISE EVENT
+                    RaiseTemperatureChangeEvent("Temperature is above threshold");
+                }
+            }
+        }
+        protected virtual void RaiseTemperatureChangeEvent(string message)
         {
-            // Invoke the event if there are any subscribers
-            OnNotify?.Invoke(message);
+            OnTemperatureChange?.Invoke(message);       // '?' means it could potentially be 0
         }
     }
 
-    public class EventSubscriber
+    public class TemperatureAlert
     {
-        public void OnEventRaised(string message)
+        public void OnTemperatureChange(string message)
         {
-            Console.WriteLine("Event received: " + message);
+            Console.WriteLine($"Alert: {message}");
         }
     }
 
@@ -29,12 +36,13 @@
     {
         static void Main(string[] args)
         {
-            EventPublisher publisher = new EventPublisher();
-            EventSubscriber subscriber = new EventSubscriber();
-            publisher.OnNotify += subscriber.OnEventRaised;
+            TemperatureMonitor monitor = new TemperatureMonitor();
+            TemperatureAlert alert = new TemperatureAlert();
+            monitor.OnTemperatureChange += alert.OnTemperatureChange;
 
-            publisher.RaiseEvent("test");
-
+            monitor.Temperature = 20;
+            Console.WriteLine("Please enter the temperature...");
+            monitor.Temperature = int.Parse(Console.ReadLine());
             Console.ReadLine();
         }
     }
